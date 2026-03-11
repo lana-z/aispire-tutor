@@ -1,0 +1,41 @@
+name: Auto-merge on 2 approvals
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.event.review.state == 'approved'
+    steps:
+      - name: Check approval count and merge
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            // Count unique approvals (latest review per user)
+            const latestByUser = {};
+            for (const review of reviews) {
+              latestByUser[review.user.login] = review.state;
+            }
+            const approvals = Object.values(latestByUser).filter(s => s === 'APPROVED').length;
+            console.log(`Approval count: ${approvals}`);
+
+            if (approvals >= 2) {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                merge_method: 'squash',
+              });
+              console.log('PR merged.');
+            } else {
+              console.log('Not enough approvals yet.');
+            }
