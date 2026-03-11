@@ -85,7 +85,10 @@ def flashcard_session(terms: list[dict]) -> None:
         front_text = f"[dim]Card {i}/{len(shuffled)}[/dim]\n\n[bold white]{term['term']}[/bold white]  {badge}"
         console.print(Panel(front_text, title="[dim]Term[/dim]", border_style="white"))
 
-        Prompt.ask("[dim]Press Enter to reveal[/dim]", default="")
+        action = Prompt.ask("[dim]Press Enter to reveal (or q to quit)[/dim]", default="")
+        if action.lower() == "q":
+            console.print("[yellow]Exiting session...[/yellow]")
+            break
 
         back_content = f"[bold]{term['definition']}[/bold]"
         if term["analogy"]:
@@ -94,7 +97,10 @@ def flashcard_session(terms: list[dict]) -> None:
             back_content += f"\n\n[dim]Example:[/dim] [cyan]{term['example']}[/cyan]"
         console.print(Panel(back_content, title="[dim]Definition[/dim]", border_style="green"))
 
-        answer = Prompt.ask("Did you know it?", choices=["y", "n"], default="y")
+        answer = Prompt.ask("Did you know it? (y/n or q to quit)", choices=["y", "n", "q"], default="y")
+        if answer == "q":
+            console.print("[yellow]Exiting session...[/yellow]")
+            break
         if answer == "y":
             session["correct"] += 1
             console.print("[green]Great![/green]\n")
@@ -130,7 +136,10 @@ def quiz_session(terms: list[dict]) -> None:
             table.add_row(str(j), f"[bold]{choice['term']}[/bold]", f"[{color}]{choice['category']}[/{color}]")
         console.print(table)
 
-        answer = Prompt.ask("Your answer", choices=["1", "2", "3", "4"])
+        answer = Prompt.ask("Your answer (1-4 or q to quit)", choices=["1", "2", "3", "4", "q"])
+        if answer == "q":
+            console.print("[yellow]Exiting session...[/yellow]")
+            break
         if int(answer) == correct_index:
             session["correct"] += 1
             console.print("[bold green]Correct![/bold green]\n")
