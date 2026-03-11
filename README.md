@@ -1,23 +1,30 @@
 # aispire-tutor
 
-A simple Python-based tutor application.
+A simple Python-based command-line tutor application for studying terms interactively.
+
+## Overview
+
+`aispire-tutor` is a beginner-friendly Python project designed to help users study and review terms from the terminal. It provides an interactive CLI experience with clean formatting using `rich`, making learning more engaging and easier to follow.
 
 ## Features
 
 - Interactive command-line interface
-- Clean output using `rich`
-- Easy to set up and run
+- Clean and colorful terminal output using `rich`
+- Flashcard-style study experience
+- Quiz mode for self-testing
+- Browse and review terms easily
+- Search terms quickly
 - Beginner-friendly project structure
+- Simple setup and run process
 
-## Requirements
-
-- Python 3.10+  
-- pip
-
-## Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/mohammadzalloum/aispire-tutor.git
-cd aispire-tutor
+## Project Structure
+─ AGENTS.md
+├── CHANGELOG.md
+├── main.py
+├── pycache
+│   └── terms.cpython-311.pyc
+├── README.md
+├── requirements.txt
+├── setup.sh
+├── study.py
+└── terms.py
