@@ -1,109 +1,130 @@
-TERMS: list[dict] = [
-    # Git (9)
+from __future__ import annotations
+
+import re
+import unicodedata
+from collections import Counter
+from typing import Iterable
+
+TERMS = [
+    # Git (10)
+    {
+        "term": "repository",
+        "definition": "A project folder tracked by Git that stores files, folders, and version history.",
+        "category": "Git",
+        "analogy": "Like a shared Google Drive folder, but with memory for every change ever made.",
+        "example": "Run git init to turn the current folder into a Git repository.",
+    },
+    {
+        "term": "commit",
+        "definition": "A saved snapshot of changes in a Git repository, usually with a message explaining what changed.",
+        "category": "Git",
+        "analogy": "Like hitting save and writing a sticky note explaining what you saved.",
+        "example": "git commit -m 'Add login form validation'",
+    },
     {
         "term": "branch",
-        "definition": "A parallel version of a repository that lets you work on changes without affecting the main codebase.",
+        "definition": "A parallel line of development that lets you work on changes without affecting the main codebase.",
         "category": "Git",
-        "analogy": None,
-        "example": "Create a feature branch: git checkout -b add-login",
+        "analogy": "Like making a copy of a document so you can edit safely before merging back.",
+        "example": "git checkout -b feature/navbar-redesign",
     },
     {
-        "term": "HEAD",
-        "definition": "A pointer to the current commit (or branch) you are working on in your local repository.",
+        "term": "merge",
+        "definition": "The action of combining changes from one branch into another.",
         "category": "Git",
-        "analogy": "A 'You Are Here' marker on a map of your commit history.",
-        "example": "git log shows HEAD -> main at the latest commit.",
-    },
-    {
-        "term": "remote",
-        "definition": "A version of your repository hosted on a server (e.g., GitHub) that you can push to or pull from.",
-        "category": "Git",
-        "analogy": None,
-        "example": "git remote -v lists your remotes, typically 'origin'.",
+        "analogy": "Like taking edits from a draft copy and applying them to the final master document.",
+        "example": "git merge feature/navbar-redesign",
     },
     {
         "term": "pull request",
-        "definition": "A request to merge changes from one branch into another, typically reviewed by teammates before merging.",
+        "definition": "A request to review and merge code changes from one branch into another, often on GitHub.",
         "category": "Git",
-        "analogy": None,
-        "example": "Open a PR on GitHub to merge your feature branch into main.",
+        "analogy": "Like asking a teammate to proofread your edits before they go live.",
+        "example": "Open a PR from feature/navbar-redesign into main.",
     },
     {
-        "term": "merge conflict",
-        "definition": "An error that occurs when two branches have made different changes to the same part of a file and Git cannot automatically reconcile them.",
-        "category": "Git",
-        "analogy": "Two people editing the same line of a shared doc simultaneously.",
-        "example": "Git marks conflicting lines with <<<<<<< HEAD ... >>>>>>> branch-name.",
-    },
-    {
-        "term": "conflict markers",
-        "definition": "The symbols Git inserts into a file during a merge conflict (<<<<<<, =======, >>>>>>>) to show the competing changes.",
+        "term": "clone",
+        "definition": "To make a full local copy of a remote repository on your own machine.",
         "category": "Git",
         "analogy": None,
-        "example": "<<<<<<< HEAD\\nmy version\\n=======\\ntheir version\\n>>>>>>> feature",
+        "example": "git clone https://github.com/org/project.git",
     },
     {
-        "term": ".gitignore",
-        "definition": "A file that lists patterns of files and directories Git should not track or commit.",
+        "term": "push",
+        "definition": "To upload your local Git commits to a remote repository such as GitHub.",
         "category": "Git",
         "analogy": None,
-        "example": "Add .env and __pycache__/ to .gitignore to avoid committing secrets or build artifacts.",
+        "example": "git push origin feature/navbar-redesign",
     },
     {
-        "term": "pre-commit hook",
-        "definition": "A script that runs automatically before each commit, often used to lint code or block commits with errors.",
+        "term": "pull",
+        "definition": "To fetch and integrate the latest changes from a remote repository into your local branch.",
         "category": "Git",
         "analogy": None,
-        "example": "The pre-commit tool can run flake8 before every git commit.",
+        "example": "git pull origin main",
     },
     {
-        "term": "continuous integration",
-        "definition": "An automated process that builds and tests code every time changes are pushed to a repository.",
+        "term": "rebase",
+        "definition": "A Git operation that rewrites commits so your branch is replayed on top of another branch, creating a linear history.",
+        "category": "Git",
+        "analogy": "Like moving your sticky notes from an old notebook onto the latest version of the notebook.",
+        "example": "git rebase main while on your feature branch.",
+    },
+    {
+        "term": "conflict",
+        "definition": "A situation where Git cannot automatically combine changes because two edits affect the same part of a file.",
         "category": "Git",
         "analogy": None,
-        "example": "GitHub Actions runs your test suite on every push to main.",
+        "example": "Both branches changed line 12, so Git stops and asks you to resolve the conflict manually.",
     },
     # Python Env (10)
     {
-        "term": "venv",
-        "definition": "Python's built-in module for creating lightweight virtual environments isolated from the global Python installation.",
-        "category": "Python Env",
-        "analogy": "Like a separate lunchbox per project — packages can't contaminate each other.",
-        "example": "python -m venv .venv && source .venv/bin/activate",
-    },
-    {
         "term": "virtual environment",
-        "definition": "An isolated directory containing a specific Python interpreter and packages, keeping dependencies separate per project.",
+        "definition": "An isolated Python environment with its own installed packages and interpreter settings.",
         "category": "Python Env",
-        "analogy": None,
-        "example": "Activating a virtual environment changes your PATH so pip installs there.",
+        "analogy": "Like a separate toolbox for each project so tools don't get mixed up.",
+        "example": "python -m venv .venv then source .venv/bin/activate",
     },
     {
-        "term": "conda",
-        "definition": "A cross-language package and environment manager that can manage Python, R, and binary dependencies.",
+        "term": "pip",
+        "definition": "Python's package installer used to install libraries from PyPI and other sources.",
         "category": "Python Env",
         "analogy": None,
-        "example": "conda create -n myenv python=3.11 numpy",
+        "example": "pip install requests",
     },
     {
         "term": "requirements.txt",
-        "definition": "A text file listing Python package dependencies and their versions for a project.",
+        "definition": "A plain text file listing the Python packages a project depends on, often with pinned versions.",
         "category": "Python Env",
-        "analogy": None,
-        "example": "pip install -r requirements.txt installs all listed packages.",
+        "analogy": "Like the ingredients list for recreating the same software environment elsewhere.",
+        "example": "pip install -r requirements.txt",
     },
     {
-        "term": "environment.yml",
-        "definition": "A YAML file used by conda to specify a reproducible environment including Python version and package dependencies.",
+        "term": ".venv",
+        "definition": "A common directory name for a local virtual environment stored inside a Python project.",
         "category": "Python Env",
         "analogy": None,
-        "example": "conda env create -f environment.yml recreates the environment.",
+        "example": "Many projects add .venv/ to .gitignore so the environment isn't committed.",
+    },
+    {
+        "term": "Python interpreter",
+        "definition": "The program that runs Python code; a project may need a specific interpreter version like Python 3.11.",
+        "category": "Python Env",
+        "analogy": None,
+        "example": "VS Code lets you choose which interpreter or virtual environment to use for a workspace.",
+    },
+    {
+        "term": "PyPI",
+        "definition": "The Python Package Index — the main public repository where Python libraries are published.",
+        "category": "Python Env",
+        "analogy": None,
+        "example": "When you run pip install rich, pip downloads the package from PyPI.",
     },
     {
         "term": "Dockerfile",
-        "definition": "A text file with instructions to build a Docker image, specifying the base OS, dependencies, and commands to run.",
+        "definition": "A text file of instructions used to build a Docker image, often defining dependencies and runtime setup.",
         "category": "Python Env",
-        "analogy": "A recipe card for building a container — lists every ingredient and step.",
+        "analogy": "Like a recipe card for building the exact machine your code needs.",
         "example": "FROM python:3.11 / COPY requirements.txt . / RUN pip install -r requirements.txt",
     },
     {
@@ -219,7 +240,7 @@ TERMS: list[dict] = [
         "analogy": None,
         "example": "Claude Code is a CLI agent: you run 'claude' in your terminal and it edits your project.",
     },
-    # Workflow (9)
+    # Workflow (10)
     {
         "term": "AGENTS.md",
         "definition": "A markdown file in a project that documents instructions and context for AI coding agents working on that repo.",
@@ -292,12 +313,104 @@ TERMS: list[dict] = [
     },
 ]
 
+REQUIRED_FIELDS = ("term", "definition", "category", "analogy", "example")
+CATEGORIES = list(dict.fromkeys(term["category"] for term in TERMS))
+
+
+def validate_terms(terms: Iterable[dict]) -> list[str]:
+    issues: list[str] = []
+    seen_terms: set[str] = set()
+
+    for index, term in enumerate(terms, start=1):
+        missing = [field for field in REQUIRED_FIELDS if field not in term]
+        if missing:
+            issues.append(f"Item {index} is missing fields: {', '.join(missing)}")
+            continue
+
+        if term["term"] in seen_terms:
+            issues.append(f"Duplicate term found: {term['term']}")
+        seen_terms.add(term["term"])
+
+        if term["category"] not in CATEGORIES:
+            issues.append(f"Unknown category for {term['term']}: {term['category']}")
+
+        if not term["definition"].strip():
+            issues.append(f"Empty definition for {term['term']}")
+
+    return issues
+
+
+def normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    without_marks = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    lowered = without_marks.lower()
+    return re.sub(r"\s+", " ", lowered).strip()
+
+
+TERM_ISSUES = validate_terms(TERMS)
+
 
 def get_terms_by_category(category: str) -> list[dict]:
     return [t for t in TERMS if t["category"] == category]
 
 
+
+def search_terms_data(terms: list[dict], query: str) -> list[dict]:
+    needle = normalize_text(query)
+    if not needle:
+        return []
+
+    scored_results: list[tuple[int, dict]] = []
+    for term in terms:
+        haystacks = {
+            "term": normalize_text(term["term"]),
+            "definition": normalize_text(term["definition"]),
+            "analogy": normalize_text(term["analogy"] or ""),
+            "example": normalize_text(term["example"] or ""),
+            "category": normalize_text(term["category"]),
+        }
+
+        score = 0
+        if needle == haystacks["term"]:
+            score += 120
+        if needle in haystacks["term"]:
+            score += 80
+        if needle in haystacks["definition"]:
+            score += 50
+        if needle in haystacks["analogy"]:
+            score += 25
+        if needle in haystacks["example"]:
+            score += 20
+        if needle in haystacks["category"]:
+            score += 10
+
+        if score > 0:
+            scored_results.append((score, term))
+
+    return [term for _, term in sorted(scored_results, key=lambda item: (-item[0], item[1]["term"].lower()))]
+
+
+
+def get_term_stats(terms: list[dict] | None = None) -> dict:
+    selected_terms = TERMS if terms is None else terms
+    by_category = Counter(term["category"] for term in selected_terms)
+    with_analogy = sum(1 for term in selected_terms if term["analogy"])
+    with_example = sum(1 for term in selected_terms if term["example"])
+    return {
+        "total": len(selected_terms),
+        "categories": dict(by_category),
+        "with_analogy": with_analogy,
+        "with_example": with_example,
+    }
+
+
 if __name__ == "__main__":
-    print(f"Total terms: {len(TERMS)}")
-    for t in TERMS[:3]:
-        print(f"  {t['term']} ({t['category']}): {t['definition'][:60]}...")
+    stats = get_term_stats()
+    print(f"Total terms: {stats['total']}")
+    print(f"Categories: {', '.join(CATEGORIES)}")
+    if TERM_ISSUES:
+        print("Validation issues found:")
+        for issue in TERM_ISSUES:
+            print(f"  - {issue}")
+    else:
+        print("Validation: OK")
