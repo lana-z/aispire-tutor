@@ -97,11 +97,11 @@ def flashcard_session(terms: list[dict]) -> None:
             back_content += f"\n\n[dim]Example:[/dim] [cyan]{term['example']}[/cyan]"
         console.print(Panel(back_content, title="[dim]Definition[/dim]", border_style="green"))
 
-        answer = Prompt.ask("Did you know it? (y/n or q to quit)", choices=["y", "n", "q"], default="y")
+        answer = Prompt.ask("Did you know it? (y/n or q to quit)", choices=["y", "n", "1", "2", "q"], default="y")
         if answer == "q":
             console.print("[yellow]Exiting session...[/yellow]")
             break
-        if answer == "y":
+        if answer in ["y", "1"]:
             session["correct"] += 1
             console.print("[green]Great![/green]\n")
         else:
