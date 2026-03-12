@@ -78,23 +78,33 @@ def flashcard_session(terms: list[dict]) -> None:
     session = {"correct": 0, "incorrect": 0, "missed_terms": []}
 
     console.print(Rule("[bold]Flashcard Mode[/bold]"))
-    console.print(f"[dim]{len(shuffled)} cards. Press Enter to flip, then mark y/n.[/dim]\n")
+    console.print(f"[dim]{len(shuffled)} cards. Press Enter to flip, mark y/n, or q to quit.[/dim]\n")
 
     for i, term in enumerate(shuffled, 1):
+
         badge = _make_badge(term["category"])
         front_text = f"[dim]Card {i}/{len(shuffled)}[/dim]\n\n[bold white]{term['term']}[/bold white]  {badge}"
         console.print(Panel(front_text, title="[dim]Term[/dim]", border_style="white"))
 
-        Prompt.ask("[dim]Press Enter to reveal[/dim]", default="")
+        reveal = Prompt.ask("[dim]Press Enter to reveal or q to quit[/dim]", default="")
+        if reveal.lower() == "q":
+            console.print("[yellow]Exiting flashcard session...[/yellow]\n")
+            break
 
         back_content = f"[bold]{term['definition']}[/bold]"
         if term["analogy"]:
             back_content += f"\n\n[dim italic]Analogy:[/dim italic] [italic]{term['analogy']}[/italic]"
         if term["example"]:
             back_content += f"\n\n[dim]Example:[/dim] [cyan]{term['example']}[/cyan]"
+
         console.print(Panel(back_content, title="[dim]Definition[/dim]", border_style="green"))
 
-        answer = Prompt.ask("Did you know it?", choices=["y", "n"], default="y")
+        answer = Prompt.ask("Did you know it? (y/n/q)", choices=["y", "n", "q"], default="y")
+
+        if answer == "q":
+            console.print("[yellow]Exiting flashcard session...[/yellow]\n")
+            break
+
         if answer == "y":
             session["correct"] += 1
             console.print("[green]Great![/green]\n")
@@ -112,9 +122,10 @@ def quiz_session(terms: list[dict]) -> None:
     session = {"correct": 0, "incorrect": 0, "missed_terms": []}
 
     console.print(Rule("[bold]Quiz Mode[/bold]"))
-    console.print(f"[dim]{len(shuffled)} questions. Pick the term that matches each definition.[/dim]\n")
+    console.print(f"[dim]{len(shuffled)} questions. Choose the correct term or press q to quit.[/dim]\n")
 
     for i, term in enumerate(shuffled, 1):
+
         choices = generate_choices(term, terms)
         correct_index = choices.index(term) + 1
 
@@ -125,23 +136,33 @@ def quiz_session(terms: list[dict]) -> None:
         table.add_column("Num", style="bold cyan", width=4)
         table.add_column("Term")
         table.add_column("Category", style="dim")
+
         for j, choice in enumerate(choices, 1):
             color = CATEGORY_COLORS.get(choice["category"], "white")
             table.add_row(str(j), f"[bold]{choice['term']}[/bold]", f"[{color}]{choice['category']}[/{color}]")
+
         console.print(table)
 
-        answer = Prompt.ask("Your answer", choices=["1", "2", "3", "4"])
+        answer = Prompt.ask("Your answer (1/2/3/4/q)", choices=["1", "2", "3", "4", "q"])
+
+        if answer == "q":
+            console.print("[yellow]Exiting quiz session...[/yellow]\n")
+            break
+
         if int(answer) == correct_index:
             session["correct"] += 1
             console.print("[bold green]Correct![/bold green]\n")
         else:
             session["incorrect"] += 1
             session["missed_terms"].append(term)
+
             correct_text = Text()
-            correct_text.append(f"Correct answer: ", style="red")
+            correct_text.append("Correct answer: ", style="red")
             correct_text.append(f"{term['term']}\n", style="bold red")
+
             if term["analogy"]:
                 correct_text.append(f"Analogy: {term['analogy']}", style="italic dim")
+
             console.print(Panel(correct_text, border_style="red"))
             console.print()
 
@@ -150,96 +171,63 @@ def quiz_session(terms: list[dict]) -> None:
 
 def browse_terms(terms: list[dict]) -> None:
     console.print(Rule("[bold]Browse Terms[/bold]"))
+
     categories = list(dict.fromkeys(t["category"] for t in terms))
 
-    PAGE_SIZE = 10
-    all_rows = []
     for cat in categories:
-        cat_terms = [t for t in terms if t["category"] == cat]
-        all_rows.append(("header", cat, cat_terms))
 
-    # Flatten to paginated rows
-    flat: list[tuple] = []
-    for _, cat, cat_terms in all_rows:
-        flat.append(("sep", cat))
-        for t in cat_terms:
-            flat.append(("term", t))
+        console.print(f"\n[bold]{cat}[/bold]")
 
-    page_items: list = []
-    page_count = 0
+        for t in terms:
+            if t["category"] == cat:
 
-    def flush_page():
-        nonlocal page_count
-        if not page_items:
-            return
-        page_count += 1
-        table = Table(show_header=True, header_style="bold", show_lines=True)
-        table.add_column("Term", style="bold", min_width=22)
-        table.add_column("Definition")
-        table.add_column("Has Analogy?", justify="center", width=12)
+                badge = _make_badge(t["category"])
 
-        current_sep = None
-        for item in page_items:
-            if item[0] == "sep":
-                current_sep = item[1]
-            else:
-                t = item[1]
-                color = CATEGORY_COLORS.get(t["category"], "white")
-                term_cell = Text()
-                term_cell.append(t["term"], style="bold")
-                if current_sep and page_items[0] == item:
-                    pass
-                cat_label = f"[{color}][{t['category']}][/{color}]"
-                table.add_row(
-                    f"[bold]{t['term']}[/bold]\n{cat_label}",
-                    t["definition"],
-                    "[green]Yes[/green]" if t["analogy"] else "[dim]—[/dim]",
-                )
-        console.print(table)
-        page_items.clear()
+                content = f"{badge}\n\n[bold]{t['definition']}[/bold]"
 
-    term_count = 0
-    for item in flat:
-        if item[0] == "sep":
-            cat = item[1]
-            color = CATEGORY_COLORS.get(cat, "white")
-            if term_count > 0 and term_count % PAGE_SIZE == 0:
-                flush_page()
-                action = Prompt.ask("[dim]Enter to continue, q to quit[/dim]", default="")
-                if action.lower() == "q":
-                    return
-            page_items.append(item)
-        else:
-            page_items.append(item)
-            term_count += 1
-            if term_count % PAGE_SIZE == 0:
-                flush_page()
-                action = Prompt.ask("[dim]Enter to continue, q to quit[/dim]", default="")
-                if action.lower() == "q":
-                    return
+                if t["analogy"]:
+                    content += f"\n\n[italic dim]Analogy:[/italic dim] [italic]{t['analogy']}[/italic]"
 
-    flush_page()
+                if t["example"]:
+                    content += f"\n\n[dim]Example:[/dim] [cyan]{t['example']}[/cyan]"
+
+                console.print(Panel(content, title=f"[bold]{t['term']}[/bold]", border_style="white"))
 
 
 def search_terms(terms: list[dict]) -> None:
+
     console.print(Rule("[bold]Search Terms[/bold]"))
+
     while True:
+
         query = Prompt.ask("Search (or 'q' to quit)")
+
         if query.lower() == "q":
             break
+
         ql = query.lower()
+
         results = [t for t in terms if ql in t["term"].lower() or ql in t["definition"].lower()]
+
         if not results:
             console.print(f"[dim]No results for '[bold]{query}[/bold]'.[/dim]\n")
+
         else:
+
             console.print(f"[dim]{len(results)} result(s) for '[bold]{query}[/bold]':[/dim]\n")
+
             for t in results:
+
                 badge = _make_badge(t["category"])
+
                 content = f"{badge}\n\n[bold]{t['definition']}[/bold]"
+
                 if t["analogy"]:
                     content += f"\n\n[italic dim]Analogy:[/italic dim] [italic]{t['analogy']}[/italic]"
+
                 if t["example"]:
                     content += f"\n\n[dim]Example:[/dim] [cyan]{t['example']}[/cyan]"
+
                 console.print(Panel(content, title=f"[bold]{t['term']}[/bold]", border_style="white"))
 
 
