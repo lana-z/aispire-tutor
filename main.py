@@ -17,11 +17,20 @@ def pick_terms() -> list[dict]:
     console.print("  [bold]1[/bold] All terms")
     for i, cat in enumerate(CATEGORIES, 2):
         console.print(f"  [bold]{i}[/bold] {cat}")
-    choice = Prompt.ask("Choose", choices=["1", "2", "3", "4", "5"], default="1")
+
+    console.print("[dim]Type 'q' to return to main menu[/dim]")
+
+    choice = Prompt.ask("Choose", choices=["1", "2", "3", "4", "5", "q"], default="1")
+
+    if choice == "q":
+        return []
+
     if choice == "1":
         return TERMS
+
     cat = CATEGORIES[int(choice) - 2]
     selected = get_terms_by_category(cat)
+
     console.print(f"[dim]Using {len(selected)} terms from [bold]{cat}[/bold].[/dim]\n")
     return selected
 
@@ -30,6 +39,7 @@ def main() -> None:
     banner = Text(justify="center")
     banner.append("aispire Vocab Tutor\n", style="bold cyan")
     banner.append(f"{len(TERMS)} terms · 4 categories · 4 study modes", style="dim")
+
     console.print(Panel(banner, border_style="cyan"))
 
     while True:
@@ -40,25 +50,32 @@ def main() -> None:
         console.print("  [bold cyan]3[/bold cyan] Browse all terms")
         console.print("  [bold cyan]4[/bold cyan] Search")
         console.print("  [bold cyan]5[/bold cyan] Quit")
+        console.print("  [dim]Or press 'q' to quit anytime[/dim]")
 
-        choice = Prompt.ask("\nPick a mode", choices=["1", "2", "3", "4", "5"])
+        choice = Prompt.ask("\nPick a mode", choices=["1", "2", "3", "4", "5", "q"])
 
-        if choice == "1":
-            terms = pick_terms()
-            flashcard_session(terms)
-        elif choice == "2":
-            terms = pick_terms()
-            if len(terms) < 4:
-                console.print("[red]Need at least 4 terms for quiz mode.[/red]")
-            else:
-                quiz_session(terms)
-        elif choice == "3":
-            browse_terms(TERMS)
-        elif choice == "4":
-            search_terms(TERMS)
-        elif choice == "5":
+        if choice == "q" or choice == "5":
             console.print("\n[dim]Good luck studying! Bye.[/dim]")
             break
+
+        elif choice == "1":
+            terms = pick_terms()
+            if terms:
+                flashcard_session(terms)
+
+        elif choice == "2":
+            terms = pick_terms()
+            if terms:
+                if len(terms) < 4:
+                    console.print("[red]Need at least 4 terms for quiz mode.[/red]")
+                else:
+                    quiz_session(terms)
+
+        elif choice == "3":
+            browse_terms(TERMS)
+
+        elif choice == "4":
+            search_terms(TERMS)
 
 
 if __name__ == "__main__":
