@@ -10,8 +10,18 @@ name: Auto-merge on 2 approvals
 # (commits, PRs, issues) for 60 days. If this repo goes dormant between
 # cohorts, re-enable the workflow from the Actions tab before the next cohort.
 #
-# Uses a PAT (MERGE_TOKEN secret) instead of GITHUB_TOKEN because the default
-# token cannot merge through branch protection even with write permissions.
+# Uses a classic PAT (MERGE_TOKEN repo secret) instead of GITHUB_TOKEN because:
+# 1. GITHUB_TOKEN cannot merge through branch protection (enforce_admins only
+#    exempts human admins, not the Actions bot)
+# 2. Fine-grained PATs also fail — they don't inherit admin bypass
+# 3. The PAT needs both `repo` and `workflow` scopes — `workflow` is required
+#    because some PRs include .github/workflows/ changes and GitHub blocks
+#    merging those without it
+#
+# PAT EXPIRATION: The MERGE_TOKEN secret expires 2026-07-30. When it expires,
+# runs succeed but merges silently fail (401). Renew at:
+#   https://github.com/settings/tokens → create new classic PAT (repo + workflow)
+#   https://github.com/lana-z/aispire-tutor/settings/secrets/actions → update MERGE_TOKEN
 
 on:
   schedule:
