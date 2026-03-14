@@ -1,41 +1,74 @@
 name: Auto-merge on 2 approvals
 
+# Uses a cron schedule instead of pull_request_review because GitHub requires
+# manual maintainer approval for any workflow triggered by fork PRs, and
+# downgrades the GITHUB_TOKEN to read-only for fork-triggered runs. Since this
+# repo uses a fork-based contribution model, a cron trigger is the only way to
+# auto-merge without manual intervention per PR.
+#
+# NOTE: GitHub silently disables scheduled workflows on repos with no activity
+# (commits, PRs, issues) for 60 days. If this repo goes dormant between
+# cohorts, re-enable the workflow from the Actions tab before the next cohort.
+
 on:
-  pull_request_review:
-    types: [submitted]
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: github.event.review.state == 'approved'
     steps:
-      - name: Check approval count and merge
+      - name: Check open PRs and merge approved ones
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { data: reviews } = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const { data: pulls } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
             });
 
-            // Count unique approvals (latest review per user)
-            const latestByUser = {};
-            for (const review of reviews) {
-              latestByUser[review.user.login] = review.state;
-            }
-            const approvals = Object.values(latestByUser).filter(s => s === 'APPROVED').length;
-            console.log(`Approval count: ${approvals}`);
+            console.log(`Found ${pulls.length} open PR(s)`);
 
-            if (approvals >= 2) {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.payload.pull_request.number,
-                merge_method: 'squash',
+            for (const pr of pulls) {
+              console.log(`\n--- PR #${pr.number}: ${pr.title} ---`);
+
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner,
+                repo,
+                pull_number: pr.number,
               });
-              console.log('PR merged.');
-            } else {
-              console.log('Not enough approvals yet.');
+
+              // Count unique approvals (latest review per user)
+              const latestByUser = {};
+              for (const review of reviews) {
+                latestByUser[review.user.login] = review.state;
+              }
+              const approvals = Object.values(latestByUser).filter(s => s === 'APPROVED').length;
+              console.log(`Approvals: ${approvals}`);
+
+              if (approvals < 2) {
+                console.log('Not enough approvals, skipping.');
+                continue;
+              }
+
+              try {
+                await github.rest.pulls.merge({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  merge_method: 'squash',
+                });
+                console.log(`PR #${pr.number} merged.`);
+              } catch (err) {
+                console.log(`PR #${pr.number} could not be merged: ${err.message}`);
+              }
             }
