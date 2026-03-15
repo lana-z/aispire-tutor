@@ -301,3 +301,6 @@ if __name__ == "__main__":
     print(f"Total terms: {len(TERMS)}")
     for t in TERMS[:3]:
         print(f"  {t['term']} ({t['category']}): {t['definition'][:60]}...")
+
+def get_categories() -> list[str]:
+    return sorted(set(t["category"] for t in TERMS))      
