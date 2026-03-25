@@ -121,8 +121,16 @@ def quiz_session(terms: list[dict]) -> None:
     console.print(f"[dim]{len(shuffled)} questions. Pick the term that matches each definition.[/dim]\n")
 
     for i, term in enumerate(shuffled, 1):
-        choices = generate_choices(term, terms)
-        correct_index = choices.index(term) + 1
+            while True:
+               ready = Prompt.ask(f"Ready for the question about {term['term']}? (Type y to continue)")
+               if ready.lower().startswith("y"):
+                break
+               else:
+                console.print("[yellow]You must enter something starting with 'y' to continue to the next question.[/yellow]")
+                
+    # --- END: Confirmation loop ---
+               choices = generate_choices(term, terms)
+               correct_index = choices.index(term) + 1
 
         q_text = f"[bold]Q{i}/{len(shuffled)}:[/bold] {term['definition']}"
         console.print(Panel(q_text, title="[dim]Which term is this?[/dim]", border_style="white"))
